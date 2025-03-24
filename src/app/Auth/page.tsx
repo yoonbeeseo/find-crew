@@ -1,105 +1,128 @@
-import { useSearchParams } from "react-router-dom";
-import { isMobile } from "react-device-detect";
+import { FormEvent, useCallback, useState } from "react";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
-import { useRef, useState } from "react";
+import { jobDescs } from "../../constants";
+import useTextInput from "../../components/ui/useTextInput";
 
 export default function AuthPage() {
   const params = useSearchParams()[0].get("target");
 
-  const extractor = (params: string | null) => {
+  const extractor = (params: string | null): TeamUserJob[] => {
     if (!params) {
       return [];
     }
     const copy = params.replace(",", "");
     const split = copy.split(" ");
-    return split.splice(0, 2);
+    return split.splice(0, 2) as TeamUserJob[];
   };
 
-  const targets = extractor(params);
+  const [teamUser, setTeamUser] = useState(initialState);
+  const [targets, setTargets] = useState(extractor(params));
 
   const content = useSearchParams()[0].get("content");
-  const ref1 = useRef<HTMLDivElement>(null);
-  const ref2 = useRef<HTMLDivElement>(null);
-  const ref3 = useRef<HTMLDivElement>(null);
-  const ref4 = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const navi = useNavigate();
+  const location = useLocation();
 
-  const refs = [ref1, ref2, ref3, ref4];
-  const items = [1, 2, 3, 4];
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [x, setX] = useState(0);
+  const Name = useTextInput();
+  const Email = useTextInput();
+  const onSubmit = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault();
+      if (!content) {
+        if (targets.length === 0) {
+          alert("찾으시는 직군을 선택해주세요.");
+          return;
+        }
+        return navi(`${location.pathname}?content=기본정보`);
+      }
+
+      switch (content) {
+        case "기본정보":
+          return console.log("기본정보 ㄱㄱ");
+      }
+    },
+    [content, targets, navi, location]
+  );
 
   return (
-    <div
-      className={twMerge(
-        "w-full h-screen snap-mandatory",
-        isMobile ? "snap-x overflow-x-auto flex" : "snap-y overflow-y-auto"
-      )}
-      ref={containerRef}
-    >
-      {isMobile && (
-        <div className="fixed w-full top-[50%] left-0 translate-y-[-50%]">
-          <button
-            className="w-10 h-auto px-2.5 absolute bottom-0 left-0"
-            onClick={() => {
-              if (currentIndex === 0) {
-                return;
-              }
-              const index = currentIndex - 1;
-              setCurrentIndex(index);
-              refs[index].current?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
+    <div>
+      <form className="col border gap-y-2.5" onSubmit={onSubmit}>
+        {!content ? (
+          <div>
+            <h1>어떤 직군을 영입하고 싶으신가요?</h1>
+            <p>여러 직군을 복수 선택할 수 있습니다.</p>
+            <ul className="wrap">
+              {jobDescs.map((job) => {
+                const selected = targets.find((item) => item === job)
+                  ? true
+                  : false;
+                const onClick = () => {
+                  setTargets((prev) =>
+                    selected
+                      ? prev.filter((item) => item !== job)
+                      : [...prev, job]
+                  );
+                };
+                return (
+                  <li key={job}>
+                    <button
+                      type="button"
+                      onClick={onClick}
+                      className={twMerge(
+                        "rounded-full bg-white border text-theme",
+                        selected && "primary bg-theme text-white"
+                      )}
+                    >
+                      {job}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : (
+          {
+            기본정보: (
+              <>
+                <div>
+                  <Name.Component
+                    label="이름"
+                    onChangeText={(name) =>
+                      setTeamUser((prev) => ({ ...prev, name }))
+                    }
+                    value={teamUser.name}
+                  />
+                </div>
+                <div>직군</div>
+                <Email.Component
+                  label="이메일"
+                  onChangeText={(email) =>
+                    setTeamUser((prev) => ({ ...prev, email }))
+                  }
+                  value={teamUser.email}
+                />
+              </>
+            ),
+          }[content]
+        )}
+        <div className="row gap-x-2.5">
+          <button type="button" onClick={() => navi(-1)}>
             이전
           </button>
-          <button
-            className="w-10 h-auto px-2.5 absolute bottom-0 right-0"
-            onClick={() => {
-              if (currentIndex === items.length - 1) {
-                return;
-              }
-              const index = currentIndex + 1;
-              setCurrentIndex(index);
-              return refs[index].current?.scrollIntoView({
-                behavior: "smooth",
-              });
-            }}
-          >
-            다음
-          </button>
+          <button className="primary px-5">다음</button>
         </div>
-      )}
-      {items.map((item, index) => (
-        <div
-          className={twMerge(
-            "min-w-full h-full border-2 snap-start text-white ",
-            isMobile ? "bg-theme" : "bg-black"
-          )}
-          key={item}
-          ref={refs[index]}
-          draggable
-          onDragStart={(e) => {
-            setCurrentIndex(index);
-            setX(e.clientX);
-            console.log("set currentindex to", index);
-          }}
-          onDragOver={(e) => {
-            const isBigger = x > e.clientX;
-            if (isBigger) {
-              console.log("show previous slide");
-              return refs[index - 1].current?.scrollIntoView({
-                behavior: "smooth",
-              });
-            }
-            console.log("show next slide");
-            return refs[index + 1].current?.scrollIntoView({
-              behavior: "smooth",
-            });
-          }}
-        >
-          slide {item}
-        </div>
-      ))}
+      </form>
     </div>
   );
 }
+
+const initialState: TeamUser = {
+  email: "",
+  experiences: [],
+  intro: "",
+  jobDesc: "개발자",
+  mobile: "010",
+  name: "",
+  targets: [],
+  uid: "",
+};

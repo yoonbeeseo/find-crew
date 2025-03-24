@@ -24,3 +24,11 @@ export const homeDescs: HomeDesc[] = [
     btnTitle: "디자이너, 개발자 찾기",
   },
 ];
+
+export const jobDescs: TeamUserJob[] = [
+  "개발자",
+  "공동대표",
+  "기획자",
+  "대표자",
+  "디자이너",
+];

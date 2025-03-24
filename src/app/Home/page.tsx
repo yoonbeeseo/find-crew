@@ -13,9 +13,7 @@ export default function HomePage() {
           <p className="p">{item.subTitle}</p>
           <div className="row justify-center sm:justify-start">
             <button
-              onClick={() =>
-                navi(`auth?target=${item.btnTitle}&content=기본정보`)
-              }
+              onClick={() => navi(`auth?target=${item.btnTitle}`)}
               className="sd primary"
             >
               {item.btnTitle}
