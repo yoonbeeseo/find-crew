@@ -1,4 +1,4 @@
-import { useCallback, useId } from "react";
+import { useCallback, useId, useRef } from "react";
 import { twMerge } from "tailwind-merge";
 
 export interface TextInputProps {
@@ -7,10 +7,14 @@ export interface TextInputProps {
   placeholder?: string;
   value: string | number;
   onChangeText: (value: string) => void;
+  message?: string | null;
+
+  onSubmitEditing?: () => void;
 
   //! div, label 추가 스타일링
   divClassName?: string;
   labelClassName?: string;
+  messageClassName?: string;
 
   //! input의 내용을 변경하고 싶을 때 쓰면 되는 창구
   props?: React.DetailedHTMLProps<
@@ -21,6 +25,11 @@ export interface TextInputProps {
 
 const useTextInput = () => {
   const id = useId();
+  const ref = useRef<HTMLInputElement>(null);
+  const focus = useCallback(
+    () => setTimeout(() => ref.current?.focus(), 100),
+    []
+  );
 
   const Component = useCallback(
     ({
@@ -31,9 +40,12 @@ const useTextInput = () => {
       divClassName,
       labelClassName,
       props,
+      message,
+      messageClassName,
+      onSubmitEditing,
     }: TextInputProps) => {
       return (
-        <div className={twMerge("col gapy-y-1", divClassName)}>
+        <div className={twMerge("col gap-y-1", divClassName)}>
           <label
             htmlFor={id}
             className={twMerge("text-gray text-sm", labelClassName)}
@@ -41,16 +53,36 @@ const useTextInput = () => {
             {label}
           </label>
           <input
+            ref={ref}
             {...props}
             id={id}
             value={value}
             onChange={(e) => onChangeText(e.target.value)}
             placeholder={placeholder}
             className={twMerge(
-              "border border-border bg-lightGray outline-none rounded h-10 px-2.5 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:border-b focus:border-b-theme focus:rounded-none focus:bg-white transition",
+              "border border-border bg-lightGray outline-none rounded h-10 px-2.5 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:border-b focus:border-b-theme focus:rounded-none focus:bg-white transition w-full",
               props?.className
             )}
+            onKeyDown={(e) => {
+              const { key, nativeEvent } = e;
+              if (key === "Tab" && !nativeEvent.isComposing) {
+                if (onSubmitEditing) {
+                  onSubmitEditing();
+                }
+              }
+              if (props?.onKeyDown) {
+                props.onKeyDown(e);
+              }
+            }}
           />
+          {message && (
+            <label
+              htmlFor={id}
+              className={twMerge("text-sm text-red-500", messageClassName)}
+            >
+              {message}
+            </label>
+          )}
         </div>
       );
     },
@@ -59,6 +91,8 @@ const useTextInput = () => {
 
   return {
     Component,
+    ref,
+    focus,
   };
 };
 
