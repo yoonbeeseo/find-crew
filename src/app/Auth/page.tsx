@@ -5,7 +5,12 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import {
+  useSearchParams,
+  useNavigate,
+  useLocation,
+  Link,
+} from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import { jobDescs } from "../../constants";
 import useTextInput from "../../components/ui/useTextInput";
@@ -15,6 +20,8 @@ import ExForm from "./ExForm";
 import ExItem from "./ExItem";
 import { CgSpinner } from "react-icons/cg";
 import Loading from "../../components/Loading";
+import { AUTH } from "../../context/hooks";
+import { FcGoogle } from "react-icons/fc";
 
 export default function AuthPage() {
   const params = useSearchParams()[0].get("target");
@@ -28,6 +35,9 @@ export default function AuthPage() {
     return split.splice(0, 2) as TeamUserJob[];
   };
 
+  const [isWithProvider, setIsWithProvider] = useState<undefined | string>(
+    undefined
+  );
   const [teamUser, setTeamUser] = useState(initialState);
   const [targets, setTargets] = useState(
     import.meta.env.DEV ? initialState.targets : extractor(params)
@@ -47,10 +57,14 @@ export default function AuthPage() {
   const Job = useSelect();
 
   const emailMessage = useMemo(() => {
+    if (isWithProvider) {
+      return null;
+    }
     const isEmailValid = emailValidator(teamUser.email);
 
     return isEmailValid ? null : "이메일을 확인해주세요.";
-  }, [teamUser.email]);
+  }, [teamUser.email, isWithProvider]);
+
   const nameMessage = useMemo(() => {
     if (teamUser.name.length === 0) {
       return "이름을 입력하세요.";
@@ -79,6 +93,9 @@ export default function AuthPage() {
     }
   }, [teamUser.mobile]);
   const passwordMessage = useMemo(() => {
+    if (isWithProvider) {
+      return null;
+    }
     if (password.length === 0) {
       return "비밀번호를 입력하세요.";
     }
@@ -89,7 +106,7 @@ export default function AuthPage() {
       return "비밀번호가 너무 깁니다.";
     }
     return null;
-  }, [password]);
+  }, [password, isWithProvider]);
 
   const goodToGo = useMemo(() => {
     if (teamUser.jobDesc.length === 0) {
@@ -113,10 +130,11 @@ export default function AuthPage() {
     return null;
   }, [nameMessage, mobileMessage, emailMessage, passwordMessage, teamUser]);
 
-  const [isPending, startTransition] = useTransition();
+  // const [isPending, startTransition] = useTransition();
+  const { isPending, signup, signinWithProvider } = AUTH.use();
 
   const onSubmit = useCallback(
-    (e: FormEvent) => {
+    async (e: FormEvent) => {
       e.preventDefault();
       if (!content) {
         if (targets.length === 0) {
@@ -166,13 +184,28 @@ export default function AuthPage() {
             return navi(`${location.pathname}?content=${goodToGo}`);
           }
 
-          startTransition(async () => {
-            // await
-          });
+          // startTransition(async () => {
+          //   // await
+          // });
+          const { message, success } = await signup(
+            teamUser,
+            password,
+            isWithProvider
+          );
+          if (!success) {
+            return alert(message);
+          }
+          alert(
+            isWithProvider
+              ? "회원정보가 업데이트 되었습니다."
+              : `${teamUser.name} 님 회원가입을 진심으로 축하드립니다.`
+          );
+          navi("/my");
           return console.log(teamUser.intro);
       }
     },
     [
+      isWithProvider,
       content,
       targets,
       navi,
@@ -188,6 +221,8 @@ export default function AuthPage() {
       Mobile,
       mobileMessage,
       goodToGo,
+      signup,
+      password,
     ]
   );
 
@@ -279,34 +314,38 @@ export default function AuthPage() {
                     console.log("submit gogo");
                   }}
                 />
-                <Email.Component
-                  label="이메일"
-                  onChangeText={(email) =>
-                    setTeamUser((prev) => ({ ...prev, email }))
-                  }
-                  value={teamUser.email}
-                  message={emailMessage}
-                  onSubmitEditing={() => {
-                    if (emailMessage) {
-                      alert(emailMessage);
-                      return Email.focus();
-                    }
-                    console.log("submit gogo");
-                  }}
-                />
-                <Password.Component
-                  label="비밀번호"
-                  onChangeText={setPassword}
-                  value={password}
-                  message={passwordMessage}
-                  onSubmitEditing={() => {
-                    if (passwordMessage) {
-                      alert(passwordMessage);
-                      return Password.focus();
-                    }
-                  }}
-                  props={{ type: "password" }}
-                />
+                {!isWithProvider && (
+                  <>
+                    <Email.Component
+                      label="이메일"
+                      onChangeText={(email) =>
+                        setTeamUser((prev) => ({ ...prev, email }))
+                      }
+                      value={teamUser.email}
+                      message={emailMessage}
+                      onSubmitEditing={() => {
+                        if (emailMessage) {
+                          alert(emailMessage);
+                          return Email.focus();
+                        }
+                        console.log("submit gogo");
+                      }}
+                    />
+                    <Password.Component
+                      label="비밀번호"
+                      onChangeText={setPassword}
+                      value={password}
+                      message={passwordMessage}
+                      onSubmitEditing={() => {
+                        if (passwordMessage) {
+                          alert(passwordMessage);
+                          return Password.focus();
+                        }
+                      }}
+                      props={{ type: "password" }}
+                    />
+                  </>
+                )}
               </>
             ),
             경력: (
@@ -396,9 +435,57 @@ export default function AuthPage() {
             이전
           </button>
           <button className="primary px-5 flex-2">
-            {content === "자소서" ? "회원가입" : "다음"}
+            {content === "자소서"
+              ? isWithProvider
+                ? "정보추가"
+                : "회원가입"
+              : "다음"}
           </button>
         </div>
+        {!isWithProvider && (
+          <div className="col gap-y-2.5">
+            <span className="w-full block text-center mt-5">OR</span>
+            <Link to={"/login"} type="button" className="primary w-full">
+              로그인하기
+            </Link>
+            <button
+              type="button"
+              className="w-full gap-x-2.5"
+              onClick={async () => {
+                const { success, message, data } = await signinWithProvider();
+                if (!success) {
+                  alert(message);
+                  if (message?.includes("통합회원")) {
+                    navi("/my/account");
+                  }
+                  if (!data) {
+                    return;
+                  }
+                  const { displayName, phoneNumber, uid } = data;
+                  setTeamUser((prev) => ({
+                    ...prev,
+                    name: displayName ?? "",
+                    mobile: phoneNumber ?? "010",
+                  }));
+                  setIsWithProvider(uid);
+                  if (!phoneNumber) {
+                    navi("/auth?content=기본정보");
+                    Mobile.focus();
+                  } else {
+                    navi("/auth?cotent=경력");
+                  }
+                  if (!displayName) {
+                    navi("/auth?content=기본정보");
+                    Name.focus();
+                  }
+                  return;
+                }
+              }}
+            >
+              <FcGoogle /> 구글로 계속하기
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );
