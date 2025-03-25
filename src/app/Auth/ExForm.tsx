@@ -19,7 +19,9 @@ const initialState: TeamUserEx = {
 const ExForm = ({ onCancel, onChange, payload }: ExFormProps) => {
   const [ex, setEx] = useState(payload ?? initialState);
   const [desc, setDesc] = useState("");
-  const [isSelectingEnd, setIsSelectingEnd] = useState(false);
+  const [isSelectingEnd, setIsSelectingEnd] = useState(
+    payload && payload.length.end !== "현재까지" ? true : false
+  );
 
   const Name = useTextInput();
   const Desc = useTextInput();
@@ -105,9 +107,31 @@ const ExForm = ({ onCancel, onChange, payload }: ExFormProps) => {
     }
 
     if (payload) {
-      console.log("변경사항 감지");
-
-      return;
+      const isDescDiff = () => {
+        let res = false;
+        for (const desc of payload.descs) {
+          const found = ex.descs.find((item) => item === desc);
+          if (!found) {
+            res = true;
+            break;
+          }
+        }
+        return res;
+      };
+      if (
+        (payload.name === ex.name &&
+          payload.length.start.year === ex.length.start.year &&
+          payload.length.start.month === ex.length.start.month &&
+          payload.length.end === "현재까지" &&
+          ex.length.end === "현재까지") ||
+        (typeof payload.length.end !== "string" &&
+          typeof ex.length.end !== "string" &&
+          payload.length.end.year === ex.length.end.year &&
+          payload.length.end.month === ex.length.end.month &&
+          !isDescDiff())
+      ) {
+        return alert("변경사항이 없습니다.");
+      }
     }
 
     onChange(ex);
@@ -132,7 +156,7 @@ const ExForm = ({ onCancel, onChange, payload }: ExFormProps) => {
   ]);
 
   return (
-    <div className="col gap-y-2.5 max-w-100 mx-auto">
+    <div className="col gap-y-2.5 max-w-100 mx-auto w-full">
       <Name.Component
         value={ex.name}
         onChangeText={(name) => setEx((prev) => ({ ...prev, name }))}
@@ -296,12 +320,17 @@ const ExForm = ({ onCancel, onChange, payload }: ExFormProps) => {
                 alert(descMessage);
                 return Desc.focus();
               }
+              const found = ex.descs.find((item) => item === desc);
+              if (found) {
+                return alert("중복된 경력 사항입니다.");
+              }
               setEx((prev) => ({ ...prev, descs: [...prev.descs, desc] }));
               setDesc("");
               Desc.focus();
             }
           },
         }}
+        // resetHidden
       />
 
       {ex.descs.length > 0 && (

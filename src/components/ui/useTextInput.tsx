@@ -1,4 +1,5 @@
 import { useCallback, useId, useRef } from "react";
+import { AiOutlineCloseCircle } from "react-icons/ai";
 import { twMerge } from "tailwind-merge";
 
 export interface TextInputProps {
@@ -10,6 +11,8 @@ export interface TextInputProps {
   message?: string | null;
 
   onSubmitEditing?: () => void;
+
+  resetHidden?: boolean;
 
   //! div, label 추가 스타일링
   divClassName?: string;
@@ -43,6 +46,7 @@ const useTextInput = () => {
       message,
       messageClassName,
       onSubmitEditing,
+      resetHidden,
     }: TextInputProps) => {
       return (
         <div className={twMerge("col gap-y-1", divClassName)}>
@@ -52,29 +56,40 @@ const useTextInput = () => {
           >
             {label}
           </label>
-          <input
-            ref={ref}
-            {...props}
-            id={id}
-            value={value}
-            onChange={(e) => onChangeText(e.target.value)}
-            placeholder={placeholder}
-            className={twMerge(
-              "border border-border bg-lightGray outline-none rounded h-10 px-2.5 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:border-b focus:border-b-theme focus:rounded-none focus:bg-white transition w-full",
-              props?.className
+          <div className="relative">
+            {!resetHidden && (
+              <AiOutlineCloseCircle
+                className="absolute top-[50%] right-[10px] text-gray-500 cursor-pointer translate-y-[-50%] active:scale-95 active:opacity-50 transition duration-75"
+                onClick={() => {
+                  onChangeText("");
+                  focus();
+                }}
+              />
             )}
-            onKeyDown={(e) => {
-              const { key, nativeEvent } = e;
-              if (key === "Tab" && !nativeEvent.isComposing) {
-                if (onSubmitEditing) {
-                  onSubmitEditing();
+            <input
+              ref={ref}
+              {...props}
+              id={id}
+              value={value}
+              onChange={(e) => onChangeText(e.target.value)}
+              placeholder={placeholder}
+              className={twMerge(
+                "border border-border bg-lightGray outline-none rounded h-10 px-2.5 focus:border-t-0 focus:border-l-0 focus:border-r-0 focus:border-b focus:border-b-theme focus:rounded-none focus:bg-white transition w-full",
+                props?.className
+              )}
+              onKeyDown={(e) => {
+                const { key, nativeEvent } = e;
+                if (key === "Tab" && !nativeEvent.isComposing) {
+                  if (onSubmitEditing) {
+                    onSubmitEditing();
+                  }
                 }
-              }
-              if (props?.onKeyDown) {
-                props.onKeyDown(e);
-              }
-            }}
-          />
+                if (props?.onKeyDown) {
+                  props.onKeyDown(e);
+                }
+              }}
+            />
+          </div>
           {message && (
             <label
               htmlFor={id}

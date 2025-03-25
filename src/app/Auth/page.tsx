@@ -1,4 +1,10 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import { jobDescs } from "../../constants";
@@ -6,6 +12,9 @@ import useTextInput from "../../components/ui/useTextInput";
 import useSelect from "../../components/ui/useSelect";
 import { emailValidator } from "../../utils/validator";
 import ExForm from "./ExForm";
+import ExItem from "./ExItem";
+import { CgSpinner } from "react-icons/cg";
+import Loading from "../../components/Loading";
 
 export default function AuthPage() {
   const params = useSearchParams()[0].get("target");
@@ -20,8 +29,10 @@ export default function AuthPage() {
   };
 
   const [teamUser, setTeamUser] = useState(initialState);
-  const [targets, setTargets] = useState(extractor(params));
-  const [password, setPassword] = useState("");
+  const [targets, setTargets] = useState(
+    import.meta.env.DEV ? initialState.targets : extractor(params)
+  );
+  const [password, setPassword] = useState(import.meta.env.DEV ? "123123" : "");
 
   const [isInsertingEx, setIsInsertingEx] = useState(false);
 
@@ -30,6 +41,7 @@ export default function AuthPage() {
   const location = useLocation();
 
   const Name = useTextInput();
+  const Mobile = useTextInput();
   const Email = useTextInput();
   const Password = useTextInput();
   const Job = useSelect();
@@ -48,6 +60,24 @@ export default function AuthPage() {
     }
     return null;
   }, [teamUser.name]);
+  const mobileMessage = useMemo(() => {
+    if (teamUser.mobile.length === 0) {
+      return "연락처를 입력해주세요.";
+    }
+    if (!teamUser.mobile.startsWith("010")) {
+      return "연락처를 확인해주세요. 010으로 시작해야합니다.";
+    }
+    if (
+      teamUser.mobile.includes(" ") ||
+      teamUser.mobile.includes("-") ||
+      teamUser.mobile.includes("/")
+    ) {
+      return "숫자만 입력해주세요.";
+    }
+    if (teamUser.mobile.length !== 11) {
+      return "휴대전화번호는 11자리입니다.";
+    }
+  }, [teamUser.mobile]);
   const passwordMessage = useMemo(() => {
     if (password.length === 0) {
       return "비밀번호를 입력하세요.";
@@ -60,6 +90,30 @@ export default function AuthPage() {
     }
     return null;
   }, [password]);
+
+  const goodToGo = useMemo(() => {
+    if (teamUser.jobDesc.length === 0) {
+      return "찾는 직업군";
+    }
+    if (
+      nameMessage ||
+      mobileMessage ||
+      emailMessage ||
+      passwordMessage ||
+      teamUser.jobDesc.length === 0
+    ) {
+      return "기본정보";
+    }
+    if (teamUser.experiences.length === 0) {
+      return "경력";
+    }
+    if (teamUser.intro.length === 0) {
+      return "자소서";
+    }
+    return null;
+  }, [nameMessage, mobileMessage, emailMessage, passwordMessage, teamUser]);
+
+  const [isPending, startTransition] = useTransition();
 
   const onSubmit = useCallback(
     (e: FormEvent) => {
@@ -82,6 +136,10 @@ export default function AuthPage() {
             alert("전문 분야를 선택해주세요.");
             return Job.showPicker();
           }
+          if (mobileMessage) {
+            alert(mobileMessage);
+            return Mobile.focus();
+          }
           if (emailMessage) {
             alert(emailMessage);
             return Email.focus();
@@ -92,6 +150,26 @@ export default function AuthPage() {
           }
 
           return navi(`${location.pathname}?content=경력`);
+
+        case "경력":
+          if (teamUser.experiences.length === 0) {
+            return alert("경력을 추가해주세요.");
+          }
+          return navi(`${location.pathname}?content=자소서`);
+        case "자소서":
+          if (goodToGo) {
+            if (goodToGo === "찾는 직업군") {
+              alert("찾는 직업군을 선택해주세요.");
+              return navi(location.pathname);
+            }
+            alert(`${goodToGo} 내용을 확인해주세요.`);
+            return navi(`${location.pathname}?content=${goodToGo}`);
+          }
+
+          startTransition(async () => {
+            // await
+          });
+          return console.log(teamUser.intro);
       }
     },
     [
@@ -107,11 +185,15 @@ export default function AuthPage() {
       passwordMessage,
       Password,
       teamUser,
+      Mobile,
+      mobileMessage,
+      goodToGo,
     ]
   );
 
   return (
     <div>
+      {isPending && <Loading message="회원가입이 진행중입니다..." />}
       <form className="col gap-y-2.5 p-5 max-w-100 mx-auto" onSubmit={onSubmit}>
         {!content ? (
           <div>
@@ -182,6 +264,21 @@ export default function AuthPage() {
                   />
                 </div>
 
+                <Mobile.Component
+                  label="휴대전화 번호"
+                  onChangeText={(mobile) =>
+                    setTeamUser((prev) => ({ ...prev, mobile }))
+                  }
+                  value={teamUser.mobile}
+                  message={mobileMessage}
+                  onSubmitEditing={() => {
+                    if (mobileMessage) {
+                      alert(mobileMessage);
+                      return Mobile.focus();
+                    }
+                    console.log("submit gogo");
+                  }}
+                />
                 <Email.Component
                   label="이메일"
                   onChangeText={(email) =>
@@ -221,15 +318,31 @@ export default function AuthPage() {
 
                   {teamUser.experiences.length > 0 && (
                     <ul className="my-2.5">
-                      {teamUser.experiences.map((ex) => (
-                        <li key={ex.name}>
-                          <p>{ex.name}</p>
-                          <ul>
-                            {ex.descs.map((d) => (
-                              <li key={d}>{d}</li>
-                            ))}
-                          </ul>
-                        </li>
+                      {teamUser.experiences.map((ex, index) => (
+                        <ExItem
+                          key={ex.name}
+                          item={ex}
+                          index={index}
+                          onDelete={() => {
+                            if (confirm("해당 경력을 삭제하시겠습니까?")) {
+                              setTeamUser((prev) => ({
+                                ...prev,
+                                experiences: prev.experiences.filter(
+                                  (item) => item.name !== ex.name
+                                ),
+                              }));
+                              alert("삭제되었습니다.");
+                            }
+                          }}
+                          onUpdate={(newEx) =>
+                            setTeamUser((prev) => ({
+                              ...prev,
+                              experiences: prev.experiences.map((item) =>
+                                item.name === ex.name ? newEx : item
+                              ),
+                            }))
+                          }
+                        />
                       ))}
                     </ul>
                   )}
@@ -247,7 +360,7 @@ export default function AuthPage() {
                 </div>
 
                 {isInsertingEx && (
-                  <div className="fixed">
+                  <div className="fixed w-full top-0 left-0 p-5 bg-white h-screen overflow-y-auto">
                     <ExForm
                       onCancel={() => setIsInsertingEx(false)}
                       onChange={(ex) =>
@@ -261,26 +374,63 @@ export default function AuthPage() {
                 )}
               </>
             ),
+            자소서: (
+              <div className="col gap-y-1">
+                <label htmlFor="intro" className="text-gray-500 text-sm">
+                  자기소개
+                </label>
+                <textarea
+                  value={teamUser.intro}
+                  onChange={(e) =>
+                    setTeamUser((prev) => ({ ...prev, intro: e.target.value }))
+                  }
+                  placeholder="자기소개 내용을 철저하게 입력하세요. 좋은 팀원을 구할 수 있는 첫 번째 지름길입니다."
+                  className="resize-none h-[50vh] p-2.5 border border-border rounded bg-lightGray focus:bg-white outline-none focus:border-theme"
+                />
+              </div>
+            ),
           }[content]
         )}
         <div className="row gap-x-2.5 mt-2.5">
           <button type="button" className="flex-1" onClick={() => navi(-1)}>
             이전
           </button>
-          <button className="primary px-5 flex-2">다음</button>
+          <button className="primary px-5 flex-2">
+            {content === "자소서" ? "회원가입" : "다음"}
+          </button>
         </div>
       </form>
     </div>
   );
 }
 
-const initialState: TeamUser = {
-  email: "",
-  experiences: [],
-  intro: "",
-  jobDesc: "개발자",
-  mobile: "010",
-  name: "",
-  targets: [],
-  uid: "",
-};
+const initialState: TeamUser = import.meta.env.DEV
+  ? {
+      email: "test1@test.com",
+      experiences: [
+        {
+          descs: ["두 발로 걷기", "큰 숨 들이쉬기"],
+          length: {
+            start: { year: 2024, month: 12 },
+            end: "현재까지",
+          },
+          name: "DW 아카데미",
+        },
+      ],
+      intro: "안녕하세요. \n\n단팥빵",
+      jobDesc: "개발자",
+      mobile: "01012341234",
+      name: "개발자",
+      targets: ["기획자", "디자이너", "공동대표"],
+      uid: "",
+    }
+  : {
+      email: "",
+      experiences: [],
+      intro: "",
+      jobDesc: "개발자",
+      mobile: "010",
+      name: "",
+      targets: [],
+      uid: "",
+    };
