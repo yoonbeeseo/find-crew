@@ -58,4 +58,5 @@ interface Chat {
   uid: string; //! 내가 작성한 내용을 추적할 아이디
   createdAt: string; //! 언제 작성한 내용인지 알고싶을 때 쓰면 됨
   //? 예시) attachedFileUrl: string | null //! 추가로 원하는 타입 붙이면 됨
+  id: string; //! 삭제할때 필요한 아이디
 }

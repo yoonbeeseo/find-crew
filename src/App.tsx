@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AUTH } from "./context/hooks";
 import Loading from "./components/Loading";
 import { Suspense, lazy } from "react";
+import UserLayout from "./components/layout/UserLayout";
 
 const HomePage = lazy(() => import("./app/Home/page"));
 const AuthPage = lazy(() => import("./app/Auth/page"));
@@ -22,25 +23,25 @@ export default function App() {
       ) : (
         <BrowserRouter>
           <Routes>
-            <Route path="/">
+            <Route path="/" element={<UserLayout user={user} />}>
               <Route index Component={HomePage} />
               <Route path="auth" Component={AuthPage} />
               <Route path="login" Component={LoginPage} />
-            </Route>
 
-            {/* 공고 찾는곳 */}
-            <Route path="find">
-              <Route index Component={FindPage} />
+              {/* 공고 찾는곳 */}
+              <Route path="find">
+                <Route index Component={FindPage} />
 
-              <Route path=":id" Component={FindDetailPage} />
-            </Route>
-
-            {user && (
-              <Route path="my">
-                <Route index element={<MyPage {...user} />} />
-                <Route path="account" element={<AccountPage {...user} />} />
+                <Route path=":id" Component={FindDetailPage} />
               </Route>
-            )}
+
+              {user && (
+                <Route path="my">
+                  <Route index element={<MyPage {...user} />} />
+                  <Route path="account" element={<AccountPage {...user} />} />
+                </Route>
+              )}
+            </Route>
           </Routes>
         </BrowserRouter>
       )}

@@ -6,7 +6,7 @@ export interface Props {
   initialized: boolean;
   isPending: boolean;
 
-  signin: (email: string, password: string) => PromiseResult;
+  signin: (email: string, password: string) => PromiseResult<firebase.User>;
   signout: () => PromiseResult;
   signup: (user: TeamUser, password: string, uid?: string) => PromiseResult;
 

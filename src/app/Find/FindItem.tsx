@@ -1,11 +1,20 @@
+import { Link } from "react-router-dom";
+import { TEAM } from "../../context/zustand.store";
+
 const FindItem = ({
   item,
   index,
   isFull,
 }: ItemProps<MatchingTeam> & { isFull?: boolean }) => {
   const { name, descs, intro, members, targets } = item;
+  const { setTeam } = TEAM.store();
+
   return (
-    <div className="col gap-y-1 border border-border p-2.5 rounded-md hover:shadow-md">
+    <Link
+      to={`/find/${item.id}`}
+      className="col gap-y-1 border border-border p-2.5 rounded-md hover:shadow-md h-auto block bg-white"
+      onClick={() => setTeam(item)}
+    >
       <h1 className="text-xl">{name}</h1>
       <p>{members.length}명의 멤버로 이루어진 팀입니다.</p>
       <p>{intro}</p>
@@ -31,7 +40,7 @@ const FindItem = ({
           ))}
         </ul>
       </div>
-    </div>
+    </Link>
   );
 };
 

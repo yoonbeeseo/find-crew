@@ -9,8 +9,12 @@ const Team = (user: TeamUser) => {
     queryKey: ["matchingTeam", user.uid],
     queryFn: async (): Promise<MatchingTeam[]> => {
       try {
-        const ref = db.collection(FBCollection.MATCHING);
-        const snap = await ref.where("fid", "==", user.uid).get();
+        const ref = db
+          .collection(FBCollection.USERS)
+          .doc(user.uid)
+          .collection(FBCollection.MY);
+
+        const snap = await ref.get();
 
         const data = snap.docs.map(
           (doc) => ({ ...doc.data(), id: doc.id } as MatchingTeam)
@@ -53,6 +57,25 @@ const Team = (user: TeamUser) => {
         ))}
       </ul>
       <Link to={"/find"}>나의 팀 찾기</Link>
+      <button
+        onClick={async () => {
+          try {
+            const ref = db.collection(FBCollection.MATCHING);
+
+            for (const team of teams) {
+              const doc = await ref.add(team);
+              console.log(doc);
+              console.log(team.name, "공고 등록 완료");
+            }
+            console.log("데이터 업데이트 됨");
+          } catch (error: any) {
+            console.log(error);
+            alert(error.message);
+          }
+        }}
+      >
+        INIT
+      </button>
     </div>
   );
 };

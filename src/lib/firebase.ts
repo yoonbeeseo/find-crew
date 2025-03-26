@@ -24,4 +24,5 @@ export enum FBCollection {
   MATCHING = "teammatching",
   MYTEAM = "myteam",
   CHATING = "chating",
+  MY = "my",
 }
