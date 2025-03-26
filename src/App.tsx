@@ -6,9 +6,13 @@ import { Suspense, lazy } from "react";
 const HomePage = lazy(() => import("./app/Home/page"));
 const AuthPage = lazy(() => import("./app/Auth/page"));
 const LoginPage = lazy(() => import("./app/Login/page"));
+const MyPage = lazy(() => import("./app/My/page"));
+const AccountPage = lazy(() => import("./app/My/Account/page"));
+const FindPage = lazy(() => import("./app/Find/page"));
+const FindDetailPage = lazy(() => import("./app/Find/[id]/page"));
 
 export default function App() {
-  const { initialized } = AUTH.use();
+  const { initialized, user } = AUTH.use();
   return (
     <Suspense fallback={<Loading message="페이지가 로딩중입니다..." />}>
       {!initialized ? (
@@ -23,6 +27,20 @@ export default function App() {
               <Route path="auth" Component={AuthPage} />
               <Route path="login" Component={LoginPage} />
             </Route>
+
+            {/* 공고 찾는곳 */}
+            <Route path="find">
+              <Route index Component={FindPage} />
+
+              <Route path=":id" Component={FindDetailPage} />
+            </Route>
+
+            {user && (
+              <Route path="my">
+                <Route index element={<MyPage {...user} />} />
+                <Route path="account" element={<AccountPage {...user} />} />
+              </Route>
+            )}
           </Routes>
         </BrowserRouter>
       )}

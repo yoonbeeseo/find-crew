@@ -458,6 +458,7 @@ export default function AuthPage() {
                   if (message?.includes("통합회원")) {
                     navi("/my/account");
                   }
+
                   if (!data) {
                     return;
                   }

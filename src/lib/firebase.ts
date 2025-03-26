@@ -21,4 +21,7 @@ export { db, authService, firebase };
 
 export enum FBCollection {
   USERS = "teamusers",
+  MATCHING = "teammatching",
+  MYTEAM = "myteam",
+  CHATING = "chating",
 }

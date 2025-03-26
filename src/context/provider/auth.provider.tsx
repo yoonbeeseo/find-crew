@@ -136,6 +136,7 @@ const AuthProvider = ({ children }: PropsWithChildren) => {
               setUser(data);
               return resolve({
                 message: "통합회원입니다. 기본정보를 입력해주세요.",
+                success: true,
               });
             }
 
