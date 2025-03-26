@@ -11,6 +11,9 @@ const MyPage = lazy(() => import("./app/My/page"));
 const AccountPage = lazy(() => import("./app/My/Account/page"));
 const FindPage = lazy(() => import("./app/Find/page"));
 const FindDetailPage = lazy(() => import("./app/Find/[id]/page"));
+const NewMatchingTeamPage = lazy(
+  () => import("./app/Find/NewMatchingTeam/page")
+);
 
 export default function App() {
   const { initialized, user } = AUTH.use();
@@ -33,6 +36,12 @@ export default function App() {
                 <Route index Component={FindPage} />
 
                 <Route path=":id" Component={FindDetailPage} />
+                {user && (
+                  <Route
+                    path="matching-teams"
+                    element={<NewMatchingTeamPage {...user} />}
+                  />
+                )}
               </Route>
 
               {user && (

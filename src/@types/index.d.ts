@@ -3,6 +3,13 @@ interface ItemProps<T = any> {
   index?: number;
 }
 
+interface FormProps<T = any> {
+  payload?: T;
+
+  onCancel: () => void;
+  onSubmitEditing?: () => void;
+}
+
 interface TeamUser {
   uid: string;
   name: string;
