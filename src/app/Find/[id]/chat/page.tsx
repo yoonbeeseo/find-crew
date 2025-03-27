@@ -1,16 +1,21 @@
-import { useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { TEAM } from "../../../../context/zustand.store";
 import { useQuery } from "@tanstack/react-query";
 import { db, FBCollection } from "../../../../lib/firebase";
 import Loading from "../../../../components/Loading";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 import ChatForm from "./ChatForm";
 
 const ChatPage = (user: TeamUser) => {
   const params = useParams<{ id: string }>();
 
-  const { team, setTeam } = TEAM.store();
+  const { team } = TEAM.store();
 
   const ref = db.collection(FBCollection.MATCHING).doc(params.id);
 
@@ -32,27 +37,60 @@ const ChatPage = (user: TeamUser) => {
     initialData: team,
   });
 
+  const isAdmin = useMemo(() => {
+    if (data?.uid === user.uid) {
+      return true;
+    }
+    return false;
+  }, [data?.uid, user.uid]);
+
+  const cid = useSearchParams()[0].get("cid");
+  const navi = useNavigate();
+  const { pathname } = useLocation();
+
   const [texts, setTexts] = useState<Chat[]>([]);
 
-  useEffect(() => {
-    //! 순서를 만들어주는 함수 orderBy(조건이될 값, 오름차순/내림차순)
-    const subMessages = ref
-      .collection(user.uid)
-      .orderBy("createdAt", "desc")
-      .onSnapshot((snap) => {
-        const data = snap.docs.map(
-          (doc) => ({ ...doc.data(), id: doc.id } as Chat)
-        );
-        if (data) {
-          setTexts(data);
-        } else {
-          setTexts([]);
-        }
-      });
+  const listRef = useRef<HTMLLIElement>(null);
+  const onFocus = useCallback(
+    () => setTimeout(() => listRef.current?.scrollIntoView(), 100),
+    []
+  );
 
-    subMessages;
-    return subMessages;
-  }, [params.id, ref, user.uid]);
+  useEffect(() => {
+    if (cid) {
+      //! 순서를 만들어주는 함수 orderBy(조건이될 값, 오름차순/내림차순)
+      const subMessages = ref
+        .collection(cid)
+        .orderBy("createdAt", "asc")
+        .onSnapshot((snap) => {
+          const data = snap.docs.map(
+            (doc) => ({ ...doc.data(), id: doc.id } as Chat)
+          );
+
+          if (data) {
+            setTexts(data);
+          } else {
+            setTexts([]);
+          }
+        });
+
+      subMessages;
+      return subMessages;
+    }
+  }, [params.id, ref, cid]);
+
+  // useEffect(() => {
+  //   if (texts.length !== length) {
+  //     onFocus();
+  //     return () => {
+  //       onFocus();
+  //     };
+  //   }
+  // }, [texts, onFocus, length]);
+
+  useEffect(() => {
+    onFocus();
+  }, []);
 
   if (isPending) {
     return <Loading message="공고를 불러오고 있습니다..." />;
@@ -74,34 +112,57 @@ const ChatPage = (user: TeamUser) => {
     );
   }
 
+  if (isAdmin && !cid) {
+    return (
+      <div>
+        {data.fid.map((cid) => (
+          <button key={cid} onClick={() => navi(`${pathname}?cid=${cid}`)}>
+            {cid} 님과의 상담
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="border h-[calc(100vh-60px)] border-red-500 col">
-      <div className="flex-1 bg-lightGray">
-        <ul>
-          {texts.map((text) => (
+    <div className="h-[calc(100vh-60px)] col">
+      <div className="flex-1 bg-lightGray p-5 max-h-[calc(100vh-141px)] overflow-y-auto overflow-x-hidden">
+        <ul className="col gap-y-2.5">
+          {texts.map((text, index) => (
             <li
               key={text.id}
-              className={twMerge(
-                "border col",
-                user.uid === text.uid && "items-end"
-              )}
+              className={twMerge("row", user.uid === text.uid && "justify-end")}
+              ref={index === texts.length - 1 ? listRef : null}
             >
               <div
                 className={twMerge(
-                  "p-2.5 border border-border max-w-75 rounded-xl relative",
+                  "p-2.5 border border-border max-w-75 rounded-xl relative bg-white",
                   user.uid === text.uid && "bg-theme text-white"
                 )}
               >
                 {text.message}
-                <span className="absolute bottom-0 right-[calc(100%+10px)] w-full text-right text-gray-400">
-                  {text.createdAt}
+                <span
+                  className={twMerge(
+                    "absolute bottom-0 w-screen text-gray-400 block text-xs font-light",
+                    user.uid === text.uid
+                      ? "right-[calc(100%+10px)] text-right"
+                      : "left-[calc(100%+10px)] text-left"
+                  )}
+                >
+                  {text.createdAt.split(" ")[1]}
                 </span>
               </div>
             </li>
           ))}
         </ul>
       </div>
-      <ChatForm myUid={user.uid} uid={data?.uid as string} />
+      <ChatForm
+        myUid={user.uid}
+        uid={data?.uid as string}
+        cid={cid!}
+        id={data.id}
+        onFocus={onFocus}
+      />
     </div>
   );
 };
