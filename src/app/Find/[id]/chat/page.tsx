@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { db, FBCollection } from "../../../../lib/firebase";
 import Loading from "../../../../components/Loading";
 import { useEffect, useState } from "react";
-import AppForm from "../../../../components/ui/AppForm";
 import { twMerge } from "tailwind-merge";
+import ChatForm from "./ChatForm";
 
 const ChatPage = (user: TeamUser) => {
   const params = useParams<{ id: string }>();
@@ -101,7 +101,7 @@ const ChatPage = (user: TeamUser) => {
           ))}
         </ul>
       </div>
-      <AppForm>form</AppForm>
+      <ChatForm myUid={user.uid} uid={data?.uid as string} />
     </div>
   );
 };
