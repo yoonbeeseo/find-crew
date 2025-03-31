@@ -4,15 +4,14 @@ import Loading from "../../components/Loading";
 import { Link } from "react-router-dom";
 import TeamItem from "./TeamItem";
 
-const Team = (user: TeamUser) => {
+const Post = (user: TeamUser) => {
   const { isPending, error, data } = useQuery({
     queryKey: ["matchingTeam", user.uid],
     queryFn: async (): Promise<MatchingTeam[]> => {
       try {
         const ref = db
-          .collection(FBCollection.USERS)
-          .doc(user.uid)
-          .collection(FBCollection.MY);
+          .collection(FBCollection.MATCHING)
+          .where("uid", "==", user.uid);
 
         const snap = await ref.get();
 
@@ -83,7 +82,7 @@ const Team = (user: TeamUser) => {
   );
 };
 
-export default Team;
+export default Post;
 
 //! 데이터 베이스에 주입하는 방법 아래 참고
 {

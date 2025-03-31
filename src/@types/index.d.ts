@@ -69,3 +69,9 @@ interface Chat {
   //? 예시) attachedFileUrl: string | null //! 추가로 원하는 타입 붙이면 됨
   id: string; //! 삭제할때 필요한 아이디
 }
+
+interface MatchedTeam extends MatchingTeam {
+  tid: string[];
+}
+
+type MutationAction = "CREATE" | "UPDATE" | "DELETE";

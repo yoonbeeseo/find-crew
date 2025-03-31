@@ -14,7 +14,7 @@ interface TeamItemProps {
 const TeamItem = ({ item, user }: TeamItemProps) => {
   const isMyPost = useMemo(() => item.uid === user.uid, [item.uid, user.uid]);
 
-  const [fUsers, setFUsers] = useState(item?.fusers ?? []);
+  const [fUsers, setFUsers] = useState(item.fusers ?? []);
 
   const Users = useSelect();
 
@@ -35,13 +35,20 @@ const TeamItem = ({ item, user }: TeamItemProps) => {
       action,
     }: {
       payload: MatchingTeam;
-      action: "CREATE" | "UPDATE" | "DELETE";
+      action: MutationAction;
     }) => {
       const ref = db.collection(FBCollection.MATCHING);
       try {
         if (action === "UPDATE") {
           await ref.doc(item.id).update({ isFinished: true, fusers: fUsers });
-          await db.collection(FBCollection.MYTEAM).doc(item.id).set(item);
+          await db
+            .collection(FBCollection.MYTEAM)
+            .doc(user.uid)
+            .set({
+              ...payload,
+              tid: [...payload.members.map((user) => user.uid), ...fUsers],
+            });
+
           alert("공고를 종료하였습니다.");
         } else if (action === "CREATE") {
           //   return console.log(payload);
@@ -54,15 +61,21 @@ const TeamItem = ({ item, user }: TeamItemProps) => {
             .set({ ...payload, id: result.id });
           alert("공고를 재 등록하였습니다.");
         } else {
-          await ref.doc(payload.id).delete();
+          if (isMyPost) {
+            await ref.doc(payload.id).delete();
+          } else {
+            await ref
+              .doc(payload.id)
+              .update({ fid: payload.fid.filter((item) => item !== user.uid) });
+          }
           await db
             .collection(FBCollection.USERS)
             .doc(user.uid)
             .collection(FBCollection.MY)
             .doc(payload.id)
             .delete();
-          alert("삭제되었습니다.");
         }
+        alert("삭제되었습니다.");
       } catch (error: any) {
         return error;
       }
@@ -127,9 +140,9 @@ const TeamItem = ({ item, user }: TeamItemProps) => {
         {isMyPost && (
           <>
             <button onClick={onEdit}>수정</button>
-            <button onClick={onDelete}>삭제</button>
           </>
         )}
+        <button onClick={onDelete}>삭제</button>
       </div>
       {isMyPost &&
         (!item?.isFinished ? (
@@ -150,6 +163,7 @@ const TeamItem = ({ item, user }: TeamItemProps) => {
                 모집 마감
               </button>
             )}
+            <button onClick={() => console.log(item)}>확인</button>
           </div>
         ) : (
           <button onClick={onRepost} className="primary">
