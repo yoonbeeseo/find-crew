@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { db, FBCollection } from "../../lib/firebase";
 import Loading from "../../components/Loading";
-import { teams } from "../../constants";
 import { Link } from "react-router-dom";
+import TeamItem from "./TeamItem";
 
 const Team = (user: TeamUser) => {
   const { isPending, error, data } = useQuery({
@@ -20,11 +20,34 @@ const Team = (user: TeamUser) => {
           (doc) => ({ ...doc.data(), id: doc.id } as MatchingTeam)
         );
 
-        if (!data) {
+        const postRef = db.collection(FBCollection.MATCHING);
+        const array: MatchingTeam[] = [];
+
+        for (const item of data) {
+          const postSnap = await postRef.doc(item.id).get();
+          const postData = postSnap.data() as MatchingTeam;
+          array.push(
+            postData
+              ? { ...postData, id: item.id }
+              : ({
+                  name: "해당공고 삭제",
+                  targets: [],
+                  descs: [],
+                  fid: [],
+                  id: item.id,
+                  intro: "",
+                  members: [],
+                  uid: "",
+                  isFinished: true,
+                } as MatchingTeam)
+          );
+        }
+
+        if (!array) {
           console.log("no data");
           return [];
         }
-        return data;
+        return array;
       } catch (error: any) {
         console.log(error);
         return [];
@@ -50,41 +73,11 @@ const Team = (user: TeamUser) => {
       <ul className="col gap-y-2.5 my-5">
         {data.map((team) => (
           <li key={team.id}>
-            <Link
-              to={
-                `/find/${team.id}/chat${team.uid === user.uid ? "" : user.uid}`
-
-                // team.uid === user.uid
-                //   ? `/find/${team.id}/chat`
-                //   : `/find/${team.id}/chat?cid=${user.uid}`
-              }
-            >
-              <b>[{team.name}]</b>
-              {team.targets.length}개의 직군을 찾고 있음
-            </Link>
+            <TeamItem item={team} user={user} />
           </li>
         ))}
       </ul>
       <Link to={"/find"}>나의 팀 찾기</Link>
-      <button
-        onClick={async () => {
-          try {
-            const ref = db.collection(FBCollection.MATCHING);
-
-            for (const team of teams) {
-              const doc = await ref.add(team);
-              console.log(doc);
-              console.log(team.name, "공고 등록 완료");
-            }
-            console.log("데이터 업데이트 됨");
-          } catch (error: any) {
-            console.log(error);
-            alert(error.message);
-          }
-        }}
-      >
-        INIT
-      </button>
     </div>
   );
 };

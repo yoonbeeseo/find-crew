@@ -46,10 +46,6 @@ const AuthProvider = ({ children }: PropsWithChildren) => {
     return subAuth;
   }, [fetchUser]);
 
-  useEffect(() => {
-    console.log({ user });
-  }, [user]);
-
   const signout = useCallback(
     (): PromiseResult =>
       new Promise((resolve) =>

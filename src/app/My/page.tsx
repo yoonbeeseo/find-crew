@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import Team from "./Team";
+import MyTeam from "./MyTeam";
 
 const MyPage = (user: TeamUser) => {
   //Todo: 매칭되고 있는 팀 + 문의하기
@@ -29,7 +30,7 @@ const MyPage = (user: TeamUser) => {
         {content ? (
           {
             matching: <Team {...user} />,
-            done: <>나랑 매칭된 팀들</>,
+            done: <MyTeam {...user} />,
           }[content]
         ) : (
           <h1>No Content</h1>
