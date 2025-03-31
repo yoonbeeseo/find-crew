@@ -20,34 +20,30 @@ const Team = (user: TeamUser) => {
           (doc) => ({ ...doc.data(), id: doc.id } as MatchingTeam)
         );
 
-        // const postRef = db.collection(FBCollection.MATCHING);
-        // const array: MatchingTeam[] = [];
+        const postRef = db.collection(FBCollection.MATCHING);
+        const array: MatchingTeam[] = [];
 
-        // for (const item of data) {
-        //   const postSnap = await postRef.doc(item.id).get();
-        //   const postData = postSnap.data() as MatchingTeam;
-        //   array.push(
-        //     postData
-        //       ? { ...postData, id: item.id }
-        //       : ({
-        //           name: "해당공고 삭제",
-        //           targets: [],
-        //           descs: [],
-        //           fid: [],
-        //           id: item.id,
-        //           intro: "",
-        //           members: [],
-        //           uid: "",
-        //           isFinished: true,
-        //         } as MatchingTeam)
-        //   );
-        // }
+        for (const item of data) {
+          const postSnap = await postRef.doc(item.id).get();
+          const postData = postSnap.data() as MatchingTeam;
+          array.push(
+            postData
+              ? { ...postData, id: item.id }
+              : ({
+                  name: "해당공고 삭제",
+                  targets: [],
+                  descs: [],
+                  fid: [],
+                  id: item.id,
+                  intro: "",
+                  members: [],
+                  uid: "",
+                  isFinished: true,
+                } as MatchingTeam)
+          );
+        }
 
-        // if (!array) {
-        //   console.log("no data");
-        //   return [];
-        // }
-        return data ?? [];
+        return array ?? [];
       } catch (error: any) {
         console.log(error);
         return [];
@@ -84,26 +80,3 @@ const Team = (user: TeamUser) => {
 };
 
 export default Team;
-
-//! 데이터 베이스에 주입하는 방법 아래 참고
-{
-  /* <button
-        onClick={async () => {
-          try {
-            const ref = db.collection(FBCollection.MATCHING);
-
-            for (const team of teams) {
-              const doc = await ref.add(team);
-              console.log(doc);
-              console.log(team.name, "공고 등록 완료");
-            }
-            console.log("데이터 업데이트 됨");
-          } catch (error: any) {
-            console.log(error);
-            alert(error.message);
-          }
-        }}
-      >
-        INIT
-      </button> */
-}

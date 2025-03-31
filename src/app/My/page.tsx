@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 import Post from "./Post";
 import MyTeam from "./MyTeam";
 import Team from "./Team";
+import AccountPage from "./Account/page";
 
 const MyPage = (user: TeamUser) => {
   //Todo: 매칭되고 있는 팀 + 문의하기
@@ -27,12 +28,13 @@ const MyPage = (user: TeamUser) => {
           ))}
         </ul>
       </aside>
-      <div>
+      <div className="flex-1">
         {content ? (
           {
             post: <Post {...user} />,
             my: <MyTeam {...user} />,
             matching: <Team {...user} />,
+            account: <AccountPage {...user} />,
           }[content]
         ) : (
           <h1>No Content</h1>
@@ -48,5 +50,5 @@ const links = [
   { name: "내가 올린 공고", path: "/my?content=post", content: "post" },
   { name: "매칭진행중", path: "/my?content=matching", content: "matching" },
   { name: "매칭완료", path: "/my?content=my", content: "my" },
-  { name: "프로필", path: "account" },
+  { name: "프로필", path: "/my?content=account", content: "account" },
 ];
